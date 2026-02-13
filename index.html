@@ -7,373 +7,295 @@
 
 <meta name="theme-color" content="#764ba2">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Money">
+
 <link rel="apple-touch-icon" href="icon.png">
+<link rel="apple-touch-startup-image" href="splash.png">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <style>
-* { box-sizing: border-box; }
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI;background:linear-gradient(135deg,#667eea,#764ba2)}
+.container{max-width:1100px;margin:auto;padding:20px}
+header{text-align:center;color:white;margin-bottom:20px}
+header h1{margin:0;font-size:28px}
 
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#667eea,#764ba2);
+.section{
+background:white;
+padding:20px;
+border-radius:16px;
+margin-bottom:20px;
+box-shadow:0 8px 20px rgba(0,0,0,0.08)
 }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-  padding: 20px;
+.summary-grid{
+display:grid;
+gap:15px;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr))
 }
 
-header {
-  text-align: center;
-  color: white;
-  margin-bottom: 25px;
+.card{padding:15px;border-radius:12px;color:white}
+.daily{background:#36b9cc}
+.weekly{background:#f6c23e}
+.monthly{background:#e74a3b}
+
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer
 }
 
-header h1 {
-  margin: 0;
-  font-size: 34px;
-  font-weight: 700;
+.income-btn{background:#1cc88a;color:white}
+.expense-btn{background:#e74a3b;color:white}
+.reset-btn{background:#6c757d;color:white;width:100%;margin-top:10px}
+
+.lock-screen{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:#111;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+z-index:9999
 }
 
-/* PROFILE */
-
-.profile-card {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(15px);
-  border-radius: 20px;
-  padding: 25px;
-  color: white;
-  margin-bottom: 25px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+input{
+width:100%;
+padding:10px;
+margin-bottom:10px
 }
 
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: white;
-  color: #764ba2;
-  font-size: 24px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-card input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  margin-bottom: 10px;
-}
-
-.save-profile {
-  background: #1cc88a;
-  color: white;
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-}
-
-.section {
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
-
-.summary-grid {
-  display: grid;
-  gap: 15px;
-  grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
-}
-
-.card {
-  padding: 15px;
-  border-radius: 12px;
-  color: white;
-}
-
-.daily { background:#36b9cc; }
-.weekly { background:#f6c23e; }
-.monthly { background:#e74a3b; }
-
-.forms {
-  display: grid;
-  gap: 15px;
-  grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
-}
-
-form input {
-  width:100%;
-  padding:10px;
-  margin-bottom:10px;
-}
-
-button {
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.income-btn { background:#1cc88a; color:white; }
-.expense-btn { background:#e74a3b; color:white; }
-.reset-btn { background:#6c757d; color:white; width:100%; margin-top:15px; }
-
-.transaction-item {
-  display:flex;
-  justify-content:space-between;
-  padding:8px 0;
-  border-bottom:1px solid #eee;
-  font-size:14px;
-}
-
-canvas { max-width:100%; }
-
-@media(max-width:600px){
-  header h1 { font-size:26px; }
-}
+canvas{max-width:100%}
 </style>
 </head>
 <body>
 
+<div id="lockScreen" class="lock-screen">
+<h2>Unlock My Money</h2>
+<input type="password" id="pinInput" placeholder="Enter PIN">
+<button onclick="unlockPIN()">Unlock</button>
+<button onclick="unlockBiometric()">Use Face ID</button>
+</div>
+
 <div class="container">
 
-<header>
-  <h1>My Money</h1>
-</header>
+<header><h1>My Money</h1></header>
 
-<div class="profile-card">
-  <div class="profile-header">
-    <div class="avatar" id="avatar">U</div>
-    <div>
-      <div id="displayName" style="font-weight:bold;font-size:18px;">User</div>
-      <div style="font-size:13px;opacity:0.8;">Personal Finance Dashboard</div>
-    </div>
-  </div>
-
-  <input type="text" id="name" placeholder="Your Name">
-  <input type="text" id="currency" placeholder="Currency Symbol (৳)">
-  <button class="save-profile" onclick="saveProfile()">Save Profile</button>
+<div class="section">
+<h3>Profile</h3>
+<input type="text" id="name" placeholder="Your Name">
+<input type="text" id="currency" placeholder="Currency">
+<input type="password" id="setPin" placeholder="Set PIN">
+<button onclick="saveProfile()">Save Profile</button>
+<button onclick="exportData()">Export Backup</button>
+<input type="file" onchange="importData(event)">
 </div>
 
 <div class="section">
-  <h2>Summary</h2>
-  <div class="summary-grid">
-    <div class="card daily">
-      <h3>Today</h3>
-      <p>Income: <span id="dailyIncome">0</span></p>
-      <p>Expenditures: <span id="dailyExpense">0</span></p>
-      <p>Balance: <span id="dailyBalance">0</span></p>
-    </div>
-    <div class="card weekly">
-      <h3>This Week</h3>
-      <p>Income: <span id="weeklyIncome">0</span></p>
-      <p>Expenditures: <span id="weeklyExpense">0</span></p>
-      <p>Balance: <span id="weeklyBalance">0</span></p>
-    </div>
-    <div class="card monthly">
-      <h3>This Month</h3>
-      <p>Income: <span id="monthlyIncome">0</span></p>
-      <p>Expenditures: <span id="monthlyExpense">0</span></p>
-      <p>Balance: <span id="monthlyBalance">0</span></p>
-    </div>
-  </div>
+<h3>Summary</h3>
+<div class="summary-grid">
+<div class="card daily">
+<p>Income: <span id="dailyIncome">0</span></p>
+<p>Expense: <span id="dailyExpense">0</span></p>
+<p>Balance: <span id="dailyBalance">0</span></p>
+</div>
+<div class="card weekly">
+<p>Income: <span id="weeklyIncome">0</span></p>
+<p>Expense: <span id="weeklyExpense">0</span></p>
+<p>Balance: <span id="weeklyBalance">0</span></p>
+</div>
+<div class="card monthly">
+<p>Income: <span id="monthlyIncome">0</span></p>
+<p>Expense: <span id="monthlyExpense">0</span></p>
+<p>Balance: <span id="monthlyBalance">0</span></p>
+</div>
+</div>
 </div>
 
 <div class="section">
-  <div class="forms">
-    <form id="incomeForm">
-      <h3>Add Income</h3>
-      <input type="text" id="incomeDesc" required>
-      <input type="number" id="incomeAmount" required>
-      <button class="income-btn">Add Income</button>
-    </form>
+<form onsubmit="addIncome(event)">
+<input type="number" id="incomeAmount" placeholder="Income Amount" required>
+<button class="income-btn">Add Income</button>
+</form>
 
-    <form id="expenseForm">
-      <h3>Add Expense</h3>
-      <input type="text" id="expenseDesc" required>
-      <input type="number" id="expenseAmount" required>
-      <button class="expense-btn">Add Expense</button>
-    </form>
-  </div>
+<form onsubmit="addExpense(event)">
+<input type="number" id="expenseAmount" placeholder="Expense Amount" required>
+<button class="expense-btn">Add Expense</button>
+</form>
 
-  <button class="reset-btn" onclick="resetTransactions()">Reset All Transactions</button>
+<button class="reset-btn" onclick="resetTransactions()">Reset Transactions</button>
 </div>
 
 <div class="section">
-  <canvas id="chart"></canvas>
+<canvas id="chart"></canvas>
 </div>
 
 </div>
 
 <script>
-let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-let profile = JSON.parse(localStorage.getItem("profile")) || {name:"User",currency:"৳"};
 
-document.getElementById("name").value = profile.name;
-document.getElementById("currency").value = profile.currency;
+let profile=JSON.parse(localStorage.getItem("profile"))||{name:"User",currency:"৳",pin:null}
+let encrypted=localStorage.getItem("transactions")
+let transactions=[]
 
-function saveProfile(){
-  profile.name = name.value || "User";
-  profile.currency = currency.value || "৳";
-  localStorage.setItem("profile",JSON.stringify(profile));
-  renderProfile();
+if(encrypted){
+try{
+let bytes=CryptoJS.AES.decrypt(encrypted,profile.pin||"default")
+transactions=JSON.parse(bytes.toString(CryptoJS.enc.Utf8))
+}catch(e){transactions=[]}
 }
 
-function renderProfile(){
-  displayName.innerText = profile.name;
-  avatar.innerText = profile.name.charAt(0).toUpperCase();
+function saveProfile(){
+profile.name=name.value||"User"
+profile.currency=currency.value||"৳"
+if(setPin.value) profile.pin=setPin.value
+localStorage.setItem("profile",JSON.stringify(profile))
+alert("Profile Saved")
 }
 
 function saveData(){
-  localStorage.setItem("transactions",JSON.stringify(transactions));
+let cipher=CryptoJS.AES.encrypt(JSON.stringify(transactions),profile.pin||"default").toString()
+localStorage.setItem("transactions",cipher)
 }
 
-function addTransaction(type,desc,amount){
-  transactions.push({ type, desc, amount:parseFloat(amount), date:new Date().toISOString() });
-  saveData();
-  render();
+function addIncome(e){
+e.preventDefault()
+transactions.push({type:"income",amount:parseFloat(incomeAmount.value),date:new Date()})
+saveData()
+render()
 }
 
-incomeForm.addEventListener("submit",e=>{
-  e.preventDefault();
-  addTransaction("income",incomeDesc.value,incomeAmount.value);
-  incomeForm.reset();
-});
-
-expenseForm.addEventListener("submit",e=>{
-  e.preventDefault();
-  addTransaction("expense",expenseDesc.value,expenseAmount.value);
-  expenseForm.reset();
-});
+function addExpense(e){
+e.preventDefault()
+transactions.push({type:"expense",amount:parseFloat(expenseAmount.value),date:new Date()})
+saveData()
+render()
+}
 
 function resetTransactions(){
-  if(confirm("Delete all transactions?")){
-    transactions=[];
-    localStorage.removeItem("transactions");
-    render();
-  }
+if(confirm("Delete all transactions?")){
+transactions=[]
+localStorage.removeItem("transactions")
+render()
+}
 }
 
 function render(){
-  let monthIncome=0,monthExpense=0;
-  let todayIncome=0,todayExpense=0;
-  let weekIncome=0,weekExpense=0;
+let today=new Date()
+let weekAgo=new Date();weekAgo.setDate(today.getDate()-7)
+let dI=0,dE=0,wI=0,wE=0,mI=0,mE=0
 
-  let today=new Date();
-  let weekAgo=new Date();
-  weekAgo.setDate(today.getDate()-7);
+transactions.forEach(tx=>{
+let txDate=new Date(tx.date)
+if(txDate.toDateString()===today.toDateString())
+tx.type==="income"?dI+=tx.amount:dE+=tx.amount
+if(txDate>=weekAgo)
+tx.type==="income"?wI+=tx.amount:wE+=tx.amount
+if(txDate.getMonth()===today.getMonth())
+tx.type==="income"?mI+=tx.amount:mE+=tx.amount
+})
 
-  transactions.forEach(tx=>{
-    let txDate=new Date(tx.date);
+dailyIncome.innerText=profile.currency+dI
+dailyExpense.innerText=profile.currency+dE
+dailyBalance.innerText=profile.currency+(dI-dE)
 
-    if(txDate.toDateString()===today.toDateString()){
-      tx.type==="income"?todayIncome+=tx.amount:todayExpense+=tx.amount;
-    }
+weeklyIncome.innerText=profile.currency+wI
+weeklyExpense.innerText=profile.currency+wE
+weeklyBalance.innerText=profile.currency+(wI-wE)
 
-    if(txDate>=weekAgo){
-      tx.type==="income"?weekIncome+=tx.amount:weekExpense+=tx.amount;
-    }
+monthlyIncome.innerText=profile.currency+mI
+monthlyExpense.innerText=profile.currency+mE
+monthlyBalance.innerText=profile.currency+(mI-mE)
 
-    if(txDate.getMonth()===today.getMonth() &&
-       txDate.getFullYear()===today.getFullYear()){
-      tx.type==="income"?monthIncome+=tx.amount:monthExpense+=tx.amount;
-    }
-  });
-
-  function setVal(id,val){
-    document.getElementById(id).innerText=profile.currency+val;
-  }
-
-  setVal("dailyIncome",todayIncome);
-  setVal("dailyExpense",todayExpense);
-  setVal("dailyBalance",todayIncome-todayExpense);
-
-  setVal("weeklyIncome",weekIncome);
-  setVal("weeklyExpense",weekExpense);
-  setVal("weeklyBalance",weekIncome-weekExpense);
-
-  setVal("monthlyIncome",monthIncome);
-  setVal("monthlyExpense",monthExpense);
-  setVal("monthlyBalance",monthIncome-monthExpense);
-
-  renderChart(monthIncome,monthExpense);
+renderChart(mI,mE)
 }
 
-function renderChart(income,expense){
-  if(window.myChart) window.myChart.destroy();
-  window.myChart=new Chart(document.getElementById("chart"),{
-    type:"doughnut",
-    data:{
-      labels:["Income","Expense"],
-      datasets:[{
-        data:[income,expense],
-        backgroundColor:["#1cc88a","#e74a3b"]
-      }]
-    }
-  });
+function renderChart(i,e){
+if(window.myChart)window.myChart.destroy()
+window.myChart=new Chart(chart,{
+type:"doughnut",
+data:{labels:["Income","Expense"],
+datasets:[{data:[i,e],backgroundColor:["#1cc88a","#e74a3b"]}]}
+})
 }
 
-renderProfile();
-render();
-
-/* AUTO CREATE MANIFEST + SERVICE WORKER */
-
-if ('serviceWorker' in navigator) {
-
-  const manifest = {
-    name: "My Money",
-    short_name: "My Money",
-    start_url: ".",
-    display: "standalone",
-    background_color: "#764ba2",
-    theme_color: "#764ba2",
-    icons: [{
-      src: "icon.png",
-      sizes: "192x192",
-      type: "image/png"
-    }]
-  };
-
-  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-  const manifestURL = URL.createObjectURL(blob);
-
-  const link = document.createElement('link');
-  link.rel = 'manifest';
-  link.href = manifestURL;
-  document.head.appendChild(link);
-
-  const swCode = `
-    self.addEventListener('install', e => {
-      self.skipWaiting();
-    });
-    self.addEventListener('fetch', e => {});
-  `;
-
-  const swBlob = new Blob([swCode], {type: 'application/javascript'});
-  const swURL = URL.createObjectURL(swBlob);
-
-  navigator.serviceWorker.register(swURL);
+function unlockPIN(){
+if(profile.pin===null || pinInput.value===profile.pin){
+lockScreen.style.display="none"
+}else alert("Wrong PIN")
 }
+
+async function unlockBiometric(){
+if(window.PublicKeyCredential){
+try{
+await navigator.credentials.get({
+publicKey:{
+challenge:new Uint8Array(32),
+timeout:60000,
+userVerification:"required"
+}
+})
+lockScreen.style.display="none"
+}catch(e){alert("Authentication Failed")}
+}else alert("Not Supported")
+}
+
+function exportData(){
+let blob=new Blob([JSON.stringify({transactions,profile})],{type:"application/json"})
+let url=URL.createObjectURL(blob)
+let a=document.createElement("a")
+a.href=url
+a.download="my-money-backup.json"
+a.click()
+}
+
+function importData(event){
+let file=event.target.files[0]
+let reader=new FileReader()
+reader.onload=function(e){
+let data=JSON.parse(e.target.result)
+transactions=data.transactions||[]
+profile=data.profile||profile
+localStorage.setItem("profile",JSON.stringify(profile))
+saveData()
+render()
+}
+reader.readAsText(file)
+}
+
+render()
+
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register(URL.createObjectURL(new Blob([`
+self.addEventListener('install',e=>self.skipWaiting());
+self.addEventListener('fetch',e=>{});
+`],{type:'text/javascript'})))
+}
+
+const manifest={
+name:"My Money",
+short_name:"My Money",
+start_url:".",
+display:"standalone",
+background_color:"#764ba2",
+theme_color:"#764ba2",
+icons:[{src:"icon.png",sizes:"192x192",type:"image/png"}]
+}
+const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'})
+const url=URL.createObjectURL(blob)
+const link=document.createElement("link")
+link.rel="manifest"
+link.href=url
+document.head.appendChild(link)
+
 </script>
-
 </body>
 </html>
