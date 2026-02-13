@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Money</title>
+
+<meta name="theme-color" content="#764ba2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon.png">
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -73,21 +79,15 @@ header h1 {
   margin-bottom: 10px;
 }
 
-.profile-card button {
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
 .save-profile {
   background: #1cc88a;
   color: white;
   width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
 }
-
-/* SECTION */
 
 .section {
   background: white;
@@ -97,12 +97,9 @@ header h1 {
   box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
-.grid {
+.summary-grid {
   display: grid;
   gap: 15px;
-}
-
-.summary-grid {
   grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
 }
 
@@ -116,16 +113,9 @@ header h1 {
 .weekly { background:#f6c23e; }
 .monthly { background:#e74a3b; }
 
-.card h3 {
-  margin-top: 0;
-}
-
-.card p {
-  margin: 5px 0;
-  font-size: 14px;
-}
-
 .forms {
+  display: grid;
+  gap: 15px;
   grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
 }
 
@@ -139,12 +129,13 @@ button {
   padding:10px;
   border:none;
   border-radius:8px;
-  cursor:pointer;
   font-weight:bold;
+  cursor:pointer;
 }
 
 .income-btn { background:#1cc88a; color:white; }
 .expense-btn { background:#e74a3b; color:white; }
+.reset-btn { background:#6c757d; color:white; width:100%; margin-top:15px; }
 
 .transaction-item {
   display:flex;
@@ -154,16 +145,7 @@ button {
   font-size:14px;
 }
 
-.reset-btn {
-  background:#6c757d;
-  color:white;
-  width:100%;
-  margin-top:15px;
-}
-
-canvas {
-  max-width:100%;
-}
+canvas { max-width:100%; }
 
 @media(max-width:600px){
   header h1 { font-size:26px; }
@@ -178,7 +160,6 @@ canvas {
   <h1>My Money</h1>
 </header>
 
-<!-- PROFILE -->
 <div class="profile-card">
   <div class="profile-header">
     <div class="avatar" id="avatar">U</div>
@@ -193,66 +174,50 @@ canvas {
   <button class="save-profile" onclick="saveProfile()">Save Profile</button>
 </div>
 
-<!-- SUMMARY -->
 <div class="section">
   <h2>Summary</h2>
-
-  <div class="grid summary-grid">
-
+  <div class="summary-grid">
     <div class="card daily">
       <h3>Today</h3>
       <p>Income: <span id="dailyIncome">0</span></p>
       <p>Expenditures: <span id="dailyExpense">0</span></p>
       <p>Balance: <span id="dailyBalance">0</span></p>
     </div>
-
     <div class="card weekly">
       <h3>This Week</h3>
       <p>Income: <span id="weeklyIncome">0</span></p>
       <p>Expenditures: <span id="weeklyExpense">0</span></p>
       <p>Balance: <span id="weeklyBalance">0</span></p>
     </div>
-
     <div class="card monthly">
       <h3>This Month</h3>
       <p>Income: <span id="monthlyIncome">0</span></p>
       <p>Expenditures: <span id="monthlyExpense">0</span></p>
       <p>Balance: <span id="monthlyBalance">0</span></p>
     </div>
-
   </div>
 </div>
 
-<!-- INPUT -->
 <div class="section">
-  <div class="grid forms">
-
+  <div class="forms">
     <form id="incomeForm">
       <h3>Add Income</h3>
-      <input type="text" id="incomeDesc" placeholder="Description" required>
-      <input type="number" id="incomeAmount" placeholder="Amount" required>
-      <button type="submit" class="income-btn">Add Income</button>
+      <input type="text" id="incomeDesc" required>
+      <input type="number" id="incomeAmount" required>
+      <button class="income-btn">Add Income</button>
     </form>
 
     <form id="expenseForm">
       <h3>Add Expense</h3>
-      <input type="text" id="expenseDesc" placeholder="Description" required>
-      <input type="number" id="expenseAmount" placeholder="Amount" required>
-      <button type="submit" class="expense-btn">Add Expense</button>
+      <input type="text" id="expenseDesc" required>
+      <input type="number" id="expenseAmount" required>
+      <button class="expense-btn">Add Expense</button>
     </form>
-
   </div>
 
   <button class="reset-btn" onclick="resetTransactions()">Reset All Transactions</button>
 </div>
 
-<!-- TRANSACTIONS -->
-<div class="section">
-  <h2>Transactions</h2>
-  <div id="transactions"></div>
-</div>
-
-<!-- CHART -->
 <div class="section">
   <canvas id="chart"></canvas>
 </div>
@@ -267,15 +232,15 @@ document.getElementById("name").value = profile.name;
 document.getElementById("currency").value = profile.currency;
 
 function saveProfile(){
-  profile.name = document.getElementById("name").value || "User";
-  profile.currency = document.getElementById("currency").value || "৳";
+  profile.name = name.value || "User";
+  profile.currency = currency.value || "৳";
   localStorage.setItem("profile",JSON.stringify(profile));
   renderProfile();
 }
 
 function renderProfile(){
-  document.getElementById("displayName").innerText = profile.name;
-  document.getElementById("avatar").innerText = profile.name.charAt(0).toUpperCase();
+  displayName.innerText = profile.name;
+  avatar.innerText = profile.name.charAt(0).toUpperCase();
 }
 
 function saveData(){
@@ -283,26 +248,21 @@ function saveData(){
 }
 
 function addTransaction(type,desc,amount){
-  transactions.push({
-    type,
-    desc,
-    amount:parseFloat(amount),
-    date:new Date().toISOString()
-  });
+  transactions.push({ type, desc, amount:parseFloat(amount), date:new Date().toISOString() });
   saveData();
   render();
 }
 
-incomeForm.addEventListener("submit",function(e){
+incomeForm.addEventListener("submit",e=>{
   e.preventDefault();
   addTransaction("income",incomeDesc.value,incomeAmount.value);
-  this.reset();
+  incomeForm.reset();
 });
 
-expenseForm.addEventListener("submit",function(e){
+expenseForm.addEventListener("submit",e=>{
   e.preventDefault();
   addTransaction("expense",expenseDesc.value,expenseAmount.value);
-  this.reset();
+  expenseForm.reset();
 });
 
 function resetTransactions(){
@@ -314,41 +274,29 @@ function resetTransactions(){
 }
 
 function render(){
-
+  let monthIncome=0,monthExpense=0;
   let todayIncome=0,todayExpense=0;
   let weekIncome=0,weekExpense=0;
-  let monthIncome=0,monthExpense=0;
 
   let today=new Date();
   let weekAgo=new Date();
   weekAgo.setDate(today.getDate()-7);
 
-  document.getElementById("transactions").innerHTML="";
-
-  transactions.slice().reverse().forEach(tx=>{
+  transactions.forEach(tx=>{
     let txDate=new Date(tx.date);
 
     if(txDate.toDateString()===today.toDateString()){
-      if(tx.type==="income") todayIncome+=tx.amount;
-      else todayExpense+=tx.amount;
+      tx.type==="income"?todayIncome+=tx.amount:todayExpense+=tx.amount;
     }
 
     if(txDate>=weekAgo){
-      if(tx.type==="income") weekIncome+=tx.amount;
-      else weekExpense+=tx.amount;
+      tx.type==="income"?weekIncome+=tx.amount:weekExpense+=tx.amount;
     }
 
     if(txDate.getMonth()===today.getMonth() &&
        txDate.getFullYear()===today.getFullYear()){
-      if(tx.type==="income") monthIncome+=tx.amount;
-      else monthExpense+=tx.amount;
+      tx.type==="income"?monthIncome+=tx.amount:monthExpense+=tx.amount;
     }
-
-    document.getElementById("transactions").innerHTML+=
-      `<div class="transaction-item">
-        <span>${tx.desc}</span>
-        <span>${profile.currency}${tx.amount}</span>
-      </div>`;
   });
 
   function setVal(id,val){
@@ -386,6 +334,45 @@ function renderChart(income,expense){
 
 renderProfile();
 render();
+
+/* AUTO CREATE MANIFEST + SERVICE WORKER */
+
+if ('serviceWorker' in navigator) {
+
+  const manifest = {
+    name: "My Money",
+    short_name: "My Money",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#764ba2",
+    theme_color: "#764ba2",
+    icons: [{
+      src: "icon.png",
+      sizes: "192x192",
+      type: "image/png"
+    }]
+  };
+
+  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+  const manifestURL = URL.createObjectURL(blob);
+
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = manifestURL;
+  document.head.appendChild(link);
+
+  const swCode = `
+    self.addEventListener('install', e => {
+      self.skipWaiting();
+    });
+    self.addEventListener('fetch', e => {});
+  `;
+
+  const swBlob = new Blob([swCode], {type: 'application/javascript'});
+  const swURL = URL.createObjectURL(swBlob);
+
+  navigator.serviceWorker.register(swURL);
+}
 </script>
 
 </body>
