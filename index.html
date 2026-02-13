@@ -1,13 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Money</title>
-
-<meta name="theme-color" content="#764ba2">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="icon.png">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -18,7 +14,6 @@ body{
 margin:0;
 font-family:Segoe UI;
 background:linear-gradient(135deg,#667eea,#764ba2);
-overflow-x:hidden;
 }
 
 /* LOCK SCREEN */
@@ -44,15 +39,7 @@ max-width:350px;
 text-align:center;
 color:white;
 box-shadow:0 20px 40px rgba(0,0,0,0.3);
-animation:fadeIn .4s ease;
 }
-
-@keyframes fadeIn{
-from{opacity:0;transform:scale(.95)}
-to{opacity:1;transform:scale(1)}
-}
-
-.lock-box h2{margin-bottom:20px}
 
 .lock-box input{
 width:100%;
@@ -78,7 +65,7 @@ margin-bottom:10px;
 
 /* APP */
 
-.container{max-width:1000px;margin:auto;padding:20px}
+.container{max-width:1100px;margin:auto;padding:20px}
 .section{
 background:white;
 padding:20px;
@@ -90,13 +77,19 @@ box-shadow:0 8px 20px rgba(0,0,0,0.08)
 .summary-grid{
 display:grid;
 gap:15px;
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr))
+grid-template-columns:repeat(auto-fit,minmax(280px,1fr))
 }
 
-.card{padding:15px;border-radius:12px;color:white}
-.daily{background:#36b9cc}
-.weekly{background:#f6c23e}
-.monthly{background:#e74a3b}
+.card{
+padding:15px;
+border-radius:12px;
+color:white;
+}
+
+.today{background:#36b9cc}
+.week{background:#f6c23e}
+.month{background:#e74a3b}
+.profit{background:#1cc88a}
 
 button{
 padding:10px;
@@ -110,11 +103,26 @@ cursor:pointer
 .expense-btn{background:#e74a3b;color:white}
 .reset-btn{background:#6c757d;color:white;width:100%;margin-top:10px}
 
+input{
+width:100%;
+padding:10px;
+margin-bottom:10px
+}
+
+.transaction{
+display:flex;
+justify-content:space-between;
+border-bottom:1px solid #eee;
+padding:6px 0;
+font-size:14px;
+}
+
 canvas{max-width:100%}
 </style>
 </head>
 <body>
 
+<!-- LOCK -->
 <div id="lockScreen" class="lock-screen">
 <div class="lock-box">
 <h2 id="lockTitle">Set Security PIN</h2>
@@ -124,43 +132,66 @@ canvas{max-width:100%}
 </div>
 </div>
 
-<div class="container" id="appContent" style="display:none">
+<!-- APP -->
+<div id="appContent" class="container" style="display:none">
 
 <h1 style="color:white;text-align:center">My Money</h1>
 
 <div class="section">
+<h3>Add Income</h3>
+<form onsubmit="addIncome(event)">
+<input type="text" id="incomeDesc" placeholder="Income Description" required>
+<input type="number" id="incomeAmount" placeholder="Amount" required>
+<button class="income-btn">Add Income</button>
+</form>
+</div>
+
+<div class="section">
+<h3>Add Expenditure</h3>
+<form onsubmit="addExpense(event)">
+<input type="text" id="expenseDesc" placeholder="Expense Description" required>
+<input type="number" id="expenseAmount" placeholder="Amount" required>
+<button class="expense-btn">Add Expense</button>
+</form>
+<button class="reset-btn" onclick="resetTransactions()">Reset Transactions</button>
+</div>
+
+<div class="section">
 <h3>Summary</h3>
 <div class="summary-grid">
-<div class="card daily">
+
+<div class="card today">
+<h4>Today</h4>
 <p>Income: <span id="dailyIncome">0</span></p>
 <p>Expense: <span id="dailyExpense">0</span></p>
 <p>Balance: <span id="dailyBalance">0</span></p>
 </div>
-<div class="card weekly">
+
+<div class="card week">
+<h4>This Week</h4>
 <p>Income: <span id="weeklyIncome">0</span></p>
 <p>Expense: <span id="weeklyExpense">0</span></p>
 <p>Balance: <span id="weeklyBalance">0</span></p>
 </div>
-<div class="card monthly">
+
+<div class="card month">
+<h4>This Month</h4>
 <p>Income: <span id="monthlyIncome">0</span></p>
 <p>Expense: <span id="monthlyExpense">0</span></p>
 <p>Balance: <span id="monthlyBalance">0</span></p>
 </div>
+
+<div class="card profit">
+<h4>Net Profit This Month</h4>
+<p id="profitValue">0</p>
+</div>
+
 </div>
 </div>
 
 <div class="section">
-<form onsubmit="addIncome(event)">
-<input type="number" id="incomeAmount" placeholder="Income Amount" required>
-<button class="income-btn">Add Income</button>
-</form>
-
-<form onsubmit="addExpense(event)">
-<input type="number" id="expenseAmount" placeholder="Expense Amount" required>
-<button class="expense-btn">Add Expense</button>
-</form>
-
-<button class="reset-btn" onclick="resetTransactions()">Reset Transactions</button>
+<h3>Transactions</h3>
+<div id="transactionList"></div>
 </div>
 
 <div class="section">
@@ -186,16 +217,13 @@ function handleLock(){
 let entered=pinInput.value
 
 if(!profile.pin){
-if(entered.length<4){alert("Enter minimum 4 digits");return}
+if(entered.length<4){alert("Minimum 4 digits");return}
 profile.pin=entered
 localStorage.setItem("profile",JSON.stringify(profile))
 unlockApp()
 }else{
-if(entered===profile.pin){
-unlockApp()
-}else{
-alert("Wrong PIN")
-}
+if(entered===profile.pin){unlockApp()}
+else alert("Wrong PIN")
 }
 }
 
@@ -210,15 +238,11 @@ if(!profile.pin){alert("Set PIN first");return}
 if(window.PublicKeyCredential){
 try{
 await navigator.credentials.get({
-publicKey:{
-challenge:new Uint8Array(32),
-timeout:60000,
-userVerification:"required"
-}
+publicKey:{challenge:new Uint8Array(32),timeout:60000,userVerification:"required"}
 })
 unlockApp()
 }catch(e){alert("Authentication Failed")}
-}else alert("Not Supported")
+}
 }
 
 function saveData(){
@@ -228,16 +252,16 @@ localStorage.setItem("transactions",cipher)
 
 function addIncome(e){
 e.preventDefault()
-transactions.push({type:"income",amount:parseFloat(incomeAmount.value),date:new Date()})
-saveData()
-render()
+transactions.push({type:"income",desc:incomeDesc.value,amount:parseFloat(incomeAmount.value),date:new Date()})
+saveData(); render()
+e.target.reset()
 }
 
 function addExpense(e){
 e.preventDefault()
-transactions.push({type:"expense",amount:parseFloat(expenseAmount.value),date:new Date()})
-saveData()
-render()
+transactions.push({type:"expense",desc:expenseDesc.value,amount:parseFloat(expenseAmount.value),date:new Date()})
+saveData(); render()
+e.target.reset()
 }
 
 function resetTransactions(){
@@ -253,14 +277,25 @@ let today=new Date()
 let weekAgo=new Date();weekAgo.setDate(today.getDate()-7)
 let dI=0,dE=0,wI=0,wE=0,mI=0,mE=0
 
-transactions.forEach(tx=>{
+transactionList.innerHTML=""
+
+transactions.slice().reverse().forEach(tx=>{
 let txDate=new Date(tx.date)
+
 if(txDate.toDateString()===today.toDateString())
 tx.type==="income"?dI+=tx.amount:dE+=tx.amount
+
 if(txDate>=weekAgo)
 tx.type==="income"?wI+=tx.amount:wE+=tx.amount
+
 if(txDate.getMonth()===today.getMonth())
 tx.type==="income"?mI+=tx.amount:mE+=tx.amount
+
+transactionList.innerHTML+=`
+<div class="transaction">
+<span>${tx.desc}</span>
+<span>${tx.type==="income"?"+" : "-"}${tx.amount}</span>
+</div>`
 })
 
 dailyIncome.innerText=dI
@@ -275,6 +310,8 @@ monthlyIncome.innerText=mI
 monthlyExpense.innerText=mE
 monthlyBalance.innerText=mI-mE
 
+profitValue.innerText=mI-mE
+
 renderChart(mI,mE)
 }
 
@@ -288,11 +325,10 @@ datasets:[{data:[i,e],backgroundColor:["#1cc88a","#e74a3b"]}]}
 }
 
 if(profile.pin){
-document.getElementById("lockTitle").innerText="Unlock My Money"
+lockTitle.innerText="Unlock My Money"
 }else{
-document.getElementById("bioBtn").style.display="none"
+bioBtn.style.display="none"
 }
-
 </script>
 </body>
 </html>
