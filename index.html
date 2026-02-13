@@ -12,8 +12,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#4e73df,#1cc88a);
-  color: #333;
+  background: linear-gradient(135deg,#667eea,#764ba2);
 }
 
 .container {
@@ -25,13 +24,70 @@ body {
 header {
   text-align: center;
   color: white;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 header h1 {
   margin: 0;
-  font-size: 32px;
+  font-size: 34px;
+  font-weight: 700;
 }
+
+/* PROFILE CARD */
+
+.profile-card {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 25px;
+  color: white;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: white;
+  color: #764ba2;
+  font-size: 24px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-card input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  margin-bottom: 10px;
+}
+
+.profile-card button {
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.save-profile {
+  background: #1cc88a;
+  color: white;
+  width: 100%;
+}
+
+/* SECTION CARD */
 
 .section {
   background: white;
@@ -47,7 +103,7 @@ header h1 {
 }
 
 .summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
 }
 
 .card {
@@ -57,55 +113,52 @@ header h1 {
   color: white;
 }
 
-.daily { background: #36b9cc; }
-.weekly { background: #f6c23e; }
-.monthly { background: #e74a3b; }
-.balance { background: #1cc88a; }
+.daily { background:#36b9cc; }
+.weekly { background:#f6c23e; }
+.monthly { background:#e74a3b; }
+.balance { background:#1cc88a; }
 
-.card h3 { margin: 0; font-size: 14px; }
-.card p { font-size: 20px; margin: 5px 0 0; }
+.card h3 { margin:0; font-size:14px; }
+.card p { font-size:20px; margin:5px 0 0; }
 
 .forms {
-  grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+  grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
 }
 
 form input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 8px;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
 }
 
-.income-btn { background: #1cc88a; }
-.expense-btn { background: #e74a3b; }
+.income-btn { background:#1cc88a; color:white; }
+.expense-btn { background:#e74a3b; color:white; }
 
 .transaction-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
-  font-size: 14px;
+  display:flex;
+  justify-content:space-between;
+  padding:8px 0;
+  border-bottom:1px solid #eee;
+  font-size:14px;
 }
 
-.profile-grid {
-  grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
-}
-
-canvas {
-  max-width: 100%;
+.reset-btn {
+  background:#6c757d;
+  color:white;
+  width:100%;
+  margin-top:15px;
 }
 
 @media(max-width:600px){
-  header h1 { font-size: 24px; }
+  header h1 { font-size:26px; }
 }
 </style>
 </head>
@@ -117,42 +170,34 @@ canvas {
   <h1>My Money</h1>
 </header>
 
-<!-- PROFILE SECTION -->
-<div class="section">
-  <h2>Profile</h2>
-  <div class="grid profile-grid">
-    <input type="text" id="name" placeholder="Your Name">
-    <input type="text" id="currency" placeholder="Currency (e.g. ৳)">
-    <button onclick="saveProfile()">Save Profile</button>
+<!-- PROFILE -->
+<div class="profile-card">
+  <div class="profile-header">
+    <div class="avatar" id="avatar">U</div>
+    <div>
+      <div id="displayName" style="font-weight:bold;font-size:18px;">Your Name</div>
+      <div style="font-size:13px;opacity:0.8;">Personal Finance Dashboard</div>
+    </div>
   </div>
+
+  <input type="text" id="name" placeholder="Your Name">
+  <input type="text" id="currency" placeholder="Currency Symbol (৳)">
+  <button class="save-profile" onclick="saveProfile()">Save Profile</button>
 </div>
 
-<!-- SUMMARY SECTION -->
+<!-- SUMMARY -->
 <div class="section">
   <div class="grid summary-grid">
-    <div class="card daily">
-      <h3>Today</h3>
-      <p id="daily">0</p>
-    </div>
-    <div class="card weekly">
-      <h3>This Week</h3>
-      <p id="weekly">0</p>
-    </div>
-    <div class="card monthly">
-      <h3>This Month</h3>
-      <p id="monthly">0</p>
-    </div>
-    <div class="card balance">
-      <h3>Total Balance</h3>
-      <p id="balance">0</p>
-    </div>
+    <div class="card daily"><h3>Today</h3><p id="daily">0</p></div>
+    <div class="card weekly"><h3>This Week</h3><p id="weekly">0</p></div>
+    <div class="card monthly"><h3>This Month</h3><p id="monthly">0</p></div>
+    <div class="card balance"><h3>Total Balance</h3><p id="balance">0</p></div>
   </div>
 </div>
 
-<!-- INPUT SECTION -->
+<!-- INPUT -->
 <div class="section">
   <div class="grid forms">
-
     <form id="incomeForm">
       <h3>Add Income</h3>
       <input type="text" id="incomeDesc" placeholder="Description" required>
@@ -166,8 +211,9 @@ canvas {
       <input type="number" id="expenseAmount" placeholder="Amount" required>
       <button type="submit" class="expense-btn">Add Expense</button>
     </form>
-
   </div>
+
+  <button class="reset-btn" onclick="resetTransactions()">Reset All Transactions</button>
 </div>
 
 <!-- TRANSACTIONS -->
@@ -185,17 +231,22 @@ canvas {
 
 <script>
 let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-let profile = JSON.parse(localStorage.getItem("profile")) || {name:"",currency:"৳"};
+let profile = JSON.parse(localStorage.getItem("profile")) || {name:"User",currency:"৳"};
 
 document.getElementById("name").value = profile.name;
 document.getElementById("currency").value = profile.currency;
 
 function saveProfile(){
-  profile.name = document.getElementById("name").value;
-  profile.currency = document.getElementById("currency").value;
+  profile.name = document.getElementById("name").value || "User";
+  profile.currency = document.getElementById("currency").value || "৳";
   localStorage.setItem("profile",JSON.stringify(profile));
-  alert("Profile Saved");
-  updateDashboard();
+  renderProfile();
+  alert("Profile Updated");
+}
+
+function renderProfile(){
+  document.getElementById("displayName").innerText = profile.name;
+  document.getElementById("avatar").innerText = profile.name.charAt(0).toUpperCase();
 }
 
 function saveData(){
@@ -215,25 +266,29 @@ function addTransaction(type,desc,amount){
 
 document.getElementById("incomeForm").addEventListener("submit",function(e){
   e.preventDefault();
-  addTransaction("income",
-    incomeDesc.value,
-    incomeAmount.value
-  );
+  addTransaction("income",incomeDesc.value,incomeAmount.value);
   this.reset();
 });
 
 document.getElementById("expenseForm").addEventListener("submit",function(e){
   e.preventDefault();
-  addTransaction("expense",
-    expenseDesc.value,
-    expenseAmount.value
-  );
+  addTransaction("expense",expenseDesc.value,expenseAmount.value);
   this.reset();
 });
+
+function resetTransactions(){
+  if(confirm("Delete all transactions?")){
+    transactions = [];
+    localStorage.removeItem("transactions");
+    render();
+  }
+}
 
 function render(){
   let daily=0,weekly=0,monthly=0,balance=0,incomeTotal=0,expenseTotal=0;
   let today=new Date();
+  let weekAgo=new Date();
+  weekAgo.setDate(today.getDate()-7);
 
   document.getElementById("transactions").innerHTML="";
 
@@ -243,7 +298,7 @@ function render(){
     balance+=amount;
 
     if(txDate.toDateString()===today.toDateString()) daily+=amount;
-    if(txDate>=new Date(today.setDate(today.getDate()-7))) weekly+=amount;
+    if(txDate>=weekAgo) weekly+=amount;
     if(txDate.getMonth()===today.getMonth()) monthly+=amount;
 
     if(tx.type==="income") incomeTotal+=tx.amount;
@@ -256,23 +311,22 @@ function render(){
       </div>`;
   });
 
-  dailyEl("daily",daily);
-  dailyEl("weekly",weekly);
-  dailyEl("monthly",monthly);
-  dailyEl("balance",balance);
+  setVal("daily",daily);
+  setVal("weekly",weekly);
+  setVal("monthly",monthly);
+  setVal("balance",balance);
 
   renderChart(incomeTotal,expenseTotal);
 }
 
-function dailyEl(id,value){
-  document.getElementById(id).innerText=profile.currency+value;
+function setVal(id,val){
+  document.getElementById(id).innerText = profile.currency + val;
 }
 
 function renderChart(income,expense){
   if(window.myChart) window.myChart.destroy();
-  let ctx=document.getElementById("chart");
-  window.myChart=new Chart(ctx,{
-    type:"bar",
+  window.myChart = new Chart(document.getElementById("chart"),{
+    type:"doughnut",
     data:{
       labels:["Income","Expense"],
       datasets:[{
@@ -283,6 +337,7 @@ function renderChart(income,expense){
   });
 }
 
+renderProfile();
 render();
 </script>
 
