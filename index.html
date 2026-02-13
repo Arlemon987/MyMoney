@@ -7,22 +7,78 @@
 
 <meta name="theme-color" content="#764ba2">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="My Money">
-
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="apple-touch-startup-image" href="splash.png">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Segoe UI;background:linear-gradient(135deg,#667eea,#764ba2)}
-.container{max-width:1100px;margin:auto;padding:20px}
-header{text-align:center;color:white;margin-bottom:20px}
-header h1{margin:0;font-size:28px}
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#667eea,#764ba2);
+overflow-x:hidden;
+}
 
+/* LOCK SCREEN */
+
+.lock-screen{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+.lock-box{
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(20px);
+padding:40px;
+border-radius:20px;
+width:90%;
+max-width:350px;
+text-align:center;
+color:white;
+box-shadow:0 20px 40px rgba(0,0,0,0.3);
+animation:fadeIn .4s ease;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:scale(.95)}
+to{opacity:1;transform:scale(1)}
+}
+
+.lock-box h2{margin-bottom:20px}
+
+.lock-box input{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+margin-bottom:15px;
+font-size:16px;
+}
+
+.lock-btn{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+cursor:pointer;
+margin-bottom:10px;
+}
+
+.primary{background:#1cc88a;color:white}
+.secondary{background:#36b9cc;color:white}
+
+/* APP */
+
+.container{max-width:1000px;margin:auto;padding:20px}
 .section{
 background:white;
 padding:20px;
@@ -54,50 +110,23 @@ cursor:pointer
 .expense-btn{background:#e74a3b;color:white}
 .reset-btn{background:#6c757d;color:white;width:100%;margin-top:10px}
 
-.lock-screen{
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:#111;
-color:white;
-display:flex;
-align-items:center;
-justify-content:center;
-flex-direction:column;
-z-index:9999
-}
-
-input{
-width:100%;
-padding:10px;
-margin-bottom:10px
-}
-
 canvas{max-width:100%}
 </style>
 </head>
 <body>
 
 <div id="lockScreen" class="lock-screen">
-<h2>Unlock My Money</h2>
-<input type="password" id="pinInput" placeholder="Enter PIN">
-<button onclick="unlockPIN()">Unlock</button>
-<button onclick="unlockBiometric()">Use Face ID</button>
+<div class="lock-box">
+<h2 id="lockTitle">Set Security PIN</h2>
+<input type="password" id="pinInput" placeholder="Enter 4 digit PIN">
+<button class="lock-btn primary" onclick="handleLock()">Continue</button>
+<button class="lock-btn secondary" onclick="unlockBiometric()" id="bioBtn">Use Face ID</button>
+</div>
 </div>
 
-<div class="container">
+<div class="container" id="appContent" style="display:none">
 
-<header><h1>My Money</h1></header>
-
-<div class="section">
-<h3>Profile</h3>
-<input type="text" id="name" placeholder="Your Name">
-<input type="text" id="currency" placeholder="Currency">
-<input type="password" id="setPin" placeholder="Set PIN">
-<button onclick="saveProfile()">Save Profile</button>
-<button onclick="exportData()">Export Backup</button>
-<input type="file" onchange="importData(event)">
-</div>
+<h1 style="color:white;text-align:center">My Money</h1>
 
 <div class="section">
 <h3>Summary</h3>
@@ -142,27 +171,58 @@ canvas{max-width:100%}
 
 <script>
 
-let profile=JSON.parse(localStorage.getItem("profile"))||{name:"User",currency:"৳",pin:null}
+let profile=JSON.parse(localStorage.getItem("profile"))||{pin:null}
 let encrypted=localStorage.getItem("transactions")
 let transactions=[]
 
-if(encrypted){
+if(encrypted && profile.pin){
 try{
-let bytes=CryptoJS.AES.decrypt(encrypted,profile.pin||"default")
+let bytes=CryptoJS.AES.decrypt(encrypted,profile.pin)
 transactions=JSON.parse(bytes.toString(CryptoJS.enc.Utf8))
 }catch(e){transactions=[]}
 }
 
-function saveProfile(){
-profile.name=name.value||"User"
-profile.currency=currency.value||"৳"
-if(setPin.value) profile.pin=setPin.value
+function handleLock(){
+let entered=pinInput.value
+
+if(!profile.pin){
+if(entered.length<4){alert("Enter minimum 4 digits");return}
+profile.pin=entered
 localStorage.setItem("profile",JSON.stringify(profile))
-alert("Profile Saved")
+unlockApp()
+}else{
+if(entered===profile.pin){
+unlockApp()
+}else{
+alert("Wrong PIN")
+}
+}
+}
+
+function unlockApp(){
+lockScreen.style.display="none"
+appContent.style.display="block"
+render()
+}
+
+async function unlockBiometric(){
+if(!profile.pin){alert("Set PIN first");return}
+if(window.PublicKeyCredential){
+try{
+await navigator.credentials.get({
+publicKey:{
+challenge:new Uint8Array(32),
+timeout:60000,
+userVerification:"required"
+}
+})
+unlockApp()
+}catch(e){alert("Authentication Failed")}
+}else alert("Not Supported")
 }
 
 function saveData(){
-let cipher=CryptoJS.AES.encrypt(JSON.stringify(transactions),profile.pin||"default").toString()
+let cipher=CryptoJS.AES.encrypt(JSON.stringify(transactions),profile.pin).toString()
 localStorage.setItem("transactions",cipher)
 }
 
@@ -203,17 +263,17 @@ if(txDate.getMonth()===today.getMonth())
 tx.type==="income"?mI+=tx.amount:mE+=tx.amount
 })
 
-dailyIncome.innerText=profile.currency+dI
-dailyExpense.innerText=profile.currency+dE
-dailyBalance.innerText=profile.currency+(dI-dE)
+dailyIncome.innerText=dI
+dailyExpense.innerText=dE
+dailyBalance.innerText=dI-dE
 
-weeklyIncome.innerText=profile.currency+wI
-weeklyExpense.innerText=profile.currency+wE
-weeklyBalance.innerText=profile.currency+(wI-wE)
+weeklyIncome.innerText=wI
+weeklyExpense.innerText=wE
+weeklyBalance.innerText=wI-wE
 
-monthlyIncome.innerText=profile.currency+mI
-monthlyExpense.innerText=profile.currency+mE
-monthlyBalance.innerText=profile.currency+(mI-mE)
+monthlyIncome.innerText=mI
+monthlyExpense.innerText=mE
+monthlyBalance.innerText=mI-mE
 
 renderChart(mI,mE)
 }
@@ -227,74 +287,11 @@ datasets:[{data:[i,e],backgroundColor:["#1cc88a","#e74a3b"]}]}
 })
 }
 
-function unlockPIN(){
-if(profile.pin===null || pinInput.value===profile.pin){
-lockScreen.style.display="none"
-}else alert("Wrong PIN")
+if(profile.pin){
+document.getElementById("lockTitle").innerText="Unlock My Money"
+}else{
+document.getElementById("bioBtn").style.display="none"
 }
-
-async function unlockBiometric(){
-if(window.PublicKeyCredential){
-try{
-await navigator.credentials.get({
-publicKey:{
-challenge:new Uint8Array(32),
-timeout:60000,
-userVerification:"required"
-}
-})
-lockScreen.style.display="none"
-}catch(e){alert("Authentication Failed")}
-}else alert("Not Supported")
-}
-
-function exportData(){
-let blob=new Blob([JSON.stringify({transactions,profile})],{type:"application/json"})
-let url=URL.createObjectURL(blob)
-let a=document.createElement("a")
-a.href=url
-a.download="my-money-backup.json"
-a.click()
-}
-
-function importData(event){
-let file=event.target.files[0]
-let reader=new FileReader()
-reader.onload=function(e){
-let data=JSON.parse(e.target.result)
-transactions=data.transactions||[]
-profile=data.profile||profile
-localStorage.setItem("profile",JSON.stringify(profile))
-saveData()
-render()
-}
-reader.readAsText(file)
-}
-
-render()
-
-if('serviceWorker' in navigator){
-navigator.serviceWorker.register(URL.createObjectURL(new Blob([`
-self.addEventListener('install',e=>self.skipWaiting());
-self.addEventListener('fetch',e=>{});
-`],{type:'text/javascript'})))
-}
-
-const manifest={
-name:"My Money",
-short_name:"My Money",
-start_url:".",
-display:"standalone",
-background_color:"#764ba2",
-theme_color:"#764ba2",
-icons:[{src:"icon.png",sizes:"192x192",type:"image/png"}]
-}
-const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'})
-const url=URL.createObjectURL(blob)
-const link=document.createElement("link")
-link.rel="manifest"
-link.href=url
-document.head.appendChild(link)
 
 </script>
 </body>
