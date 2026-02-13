@@ -3,164 +3,245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Earnings Tracker</title>
+<title>Finance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f2f5f9;
+  background: #f4f6fb;
   margin: 0;
   padding: 20px;
 }
 
 .container {
-  max-width: 500px;
+  max-width: 900px;
   margin: auto;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
 }
 
 h1 {
   text-align: center;
+  margin-bottom: 20px;
 }
 
-.balance-box {
-  background: #111;
-  color: white;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
   margin-bottom: 20px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 14px;
+  color: gray;
+}
+
+.card p {
+  font-size: 20px;
+  margin: 5px 0 0;
 }
 
 form {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
 form input, form select {
+  padding: 10px;
   flex: 1;
-  padding: 8px;
 }
 
 button {
-  padding: 8px 12px;
+  padding: 10px;
   cursor: pointer;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+.transaction-list {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
 }
 
-li {
+.transaction-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px;
+  padding: 8px 0;
   border-bottom: 1px solid #eee;
+  font-size: 14px;
 }
 
-.income {
-  color: green;
-}
+.income { color: green; }
+.expense { color: red; }
 
-.expense {
-  color: red;
-}
-
-.delete-btn {
-  background: red;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 4px;
+canvas {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
 }
 </style>
 </head>
-
 <body>
 
 <div class="container">
-  <h1>Daily Earnings & Spending</h1>
 
-  <div class="balance-box">
-    <h2>Balance: ৳ <span id="balance">0</span></h2>
+<h1>Finance Dashboard</h1>
+
+<div class="dashboard">
+  <div class="card">
+    <h3>Today</h3>
+    <p id="dailyTotal">0</p>
   </div>
+  <div class="card">
+    <h3>This Week</h3>
+    <p id="weeklyTotal">0</p>
+  </div>
+  <div class="card">
+    <h3>This Month</h3>
+    <p id="monthlyTotal">0</p>
+  </div>
+  <div class="card">
+    <h3>Balance</h3>
+    <p id="balance">0</p>
+  </div>
+</div>
 
-  <form id="transactionForm">
-    <input type="text" id="description" placeholder="Description" required>
-    <input type="number" id="amount" placeholder="Amount" required>
-    <select id="type">
-      <option value="income">Income</option>
-      <option value="expense">Expense</option>
-    </select>
-    <button type="submit">Add</button>
-  </form>
+<form id="transactionForm">
+  <input type="text" id="description" placeholder="Description" required>
+  <input type="number" id="amount" placeholder="Amount" required>
+  <select id="type">
+    <option value="income">Income</option>
+    <option value="expense">Expense</option>
+  </select>
+  <button type="submit">Add</button>
+</form>
 
-  <ul id="transactionList"></ul>
+<div class="transaction-list" id="transactionList"></div>
+
+<canvas id="financeChart"></canvas>
+
 </div>
 
 <script>
-const form = document.getElementById("transactionForm");
-const list = document.getElementById("transactionList");
-const balanceEl = document.getElementById("balance");
-
 let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
 
-function updateLocalStorage() {
+const dailyEl = document.getElementById("dailyTotal");
+const weeklyEl = document.getElementById("weeklyTotal");
+const monthlyEl = document.getElementById("monthlyTotal");
+const balanceEl = document.getElementById("balance");
+const listEl = document.getElementById("transactionList");
+
+function saveData() {
   localStorage.setItem("transactions", JSON.stringify(transactions));
 }
 
-function calculateBalance() {
-  const balance = transactions.reduce((acc, tx) => {
-    return tx.type === "income" ? acc + tx.amount : acc - tx.amount;
-  }, 0);
+function getStartOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  return new Date(d.setDate(diff));
+}
+
+function updateDashboard() {
+  const today = new Date();
+  let daily = 0, weekly = 0, monthly = 0, balance = 0;
+  let incomeTotal = 0, expenseTotal = 0;
+
+  transactions.forEach(tx => {
+    const txDate = new Date(tx.date);
+    const amount = tx.type === "income" ? tx.amount : -tx.amount;
+
+    balance += amount;
+
+    if (txDate.toDateString() === today.toDateString()) {
+      daily += amount;
+    }
+
+    if (txDate >= getStartOfWeek(today)) {
+      weekly += amount;
+    }
+
+    if (txDate.getMonth() === today.getMonth() &&
+        txDate.getFullYear() === today.getFullYear()) {
+      monthly += amount;
+    }
+
+    if (tx.type === "income") incomeTotal += tx.amount;
+    else expenseTotal += tx.amount;
+  });
+
+  dailyEl.textContent = daily;
+  weeklyEl.textContent = weekly;
+  monthlyEl.textContent = monthly;
   balanceEl.textContent = balance;
+
+  renderChart(incomeTotal, expenseTotal);
 }
 
 function renderTransactions() {
-  list.innerHTML = "";
-
-  transactions.forEach((tx, index) => {
-    const li = document.createElement("li");
-    li.classList.add(tx.type);
-
-    li.innerHTML = `
-      <span>${tx.description} - ৳${tx.amount}</span>
-      <button class="delete-btn" onclick="deleteTransaction(${index})">X</button>
+  listEl.innerHTML = "";
+  transactions.slice().reverse().forEach(tx => {
+    const div = document.createElement("div");
+    div.className = "transaction-item " + tx.type;
+    div.innerHTML = `
+      <span>${tx.date} - ${tx.description}</span>
+      <span>৳${tx.amount}</span>
     `;
-
-    list.appendChild(li);
+    listEl.appendChild(div);
   });
-
-  calculateBalance();
 }
 
-function deleteTransaction(index) {
-  transactions.splice(index, 1);
-  updateLocalStorage();
-  renderTransactions();
+function renderChart(income, expense) {
+  if (window.myChart) window.myChart.destroy();
+
+  const ctx = document.getElementById("financeChart").getContext("2d");
+
+  window.myChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Income", "Expense"],
+      datasets: [{
+        data: [income, expense],
+        backgroundColor: ["green", "red"]
+      }]
+    }
+  });
 }
 
-form.addEventListener("submit", function(e) {
+document.getElementById("transactionForm").addEventListener("submit", function(e) {
   e.preventDefault();
 
   const description = document.getElementById("description").value;
   const amount = parseFloat(document.getElementById("amount").value);
   const type = document.getElementById("type").value;
 
-  transactions.push({ description, amount, type });
+  const today = new Date().toISOString().split("T")[0];
 
-  updateLocalStorage();
+  transactions.push({
+    description,
+    amount,
+    type,
+    date: today
+  });
+
+  saveData();
   renderTransactions();
-  form.reset();
+  updateDashboard();
+  this.reset();
 });
 
 renderTransactions();
+updateDashboard();
 </script>
 
 </body>
